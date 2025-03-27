@@ -8,7 +8,7 @@ RUN apt-get update && apt-get upgrade -y && \
 # Set the new (patched) Restic version
 ENV RESTIC_VERSION=0.17.3
 
-# Download and install the Restic binary (fixing the filename)
+# Download and install the Restic binary (using a consistent file name)
 RUN curl -L -o /tmp/restic_${RESTIC_VERSION}_linux_amd64.bz2 https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_amd64.bz2 && \
     bzip2 -d /tmp/restic_${RESTIC_VERSION}_linux_amd64.bz2 && \
     chmod +x /tmp/restic_${RESTIC_VERSION}_linux_amd64 && \
