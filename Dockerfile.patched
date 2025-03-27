@@ -1,0 +1,17 @@
+FROM ubuntu:22.04
+
+# Update packages and install required dependencies with patched versions
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y curl ca-certificates gnupg && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the new Restic version or other environment variables if needed
+ENV RESTIC_VERSION=0.17.3
+
+# Download and install the Restic binary
+RUN curl -L -o /tmp/restic.tar.bz2 https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_amd64.bz2 && \
+    bzip2 -d /tmp/restic.tar.bz2 && \
+    chmod +x /tmp/restic_${RESTIC_VERSION}_linux_amd64 && \
+    mv /tmp/restic_${RESTIC_VERSION}_linux_amd64 /usr/local/bin/restic
+
+CMD ["restic", "--help"]

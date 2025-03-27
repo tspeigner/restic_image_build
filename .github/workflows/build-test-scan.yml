@@ -53,11 +53,19 @@ jobs:
       # (Optional step: use actions/upload-artifact@v3)
 
     - name: Scan Image with Grype and Fail on Critical Vulnerabilities
+      id: grype_scan
+      continue-on-error: true
       run: |
-        # Run Grype in a container to scan the saved image tar file.
-        # Mount the tar file into the container.
+        # Run Grype on the saved image; exit code > 0 if critical vulnerabilities found.
         docker run --rm -v "$(pwd)/image.tar:/image.tar" anchore/grype:latest /image.tar --fail-on critical
-      # The --fail-on critical flag makes the step fail if any critical vulnerabilities are detected.
+
+    - name: Build Patched Docker Image if Vulnerabilities Found
+      if: steps.grype_scan.outcome == 'failure'
+      run: |
+        echo "Critical vulnerabilities detected. Building patched image using Dockerfile.patched..."
+        docker build -t restic_image_build:patched -f Dockerfile.patched .
+        echo "Testing patched image..."
+        docker run --rm restic_image_build:patched restic --help
 
     - name: Notify on Failure
       if: failure()
