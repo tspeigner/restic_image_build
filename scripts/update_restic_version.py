@@ -34,11 +34,18 @@ def update_dockerfile(new_version):
 
 def git_commit_and_push(new_version):
     try:
-        subprocess.run(["git", "config", "--global", "user.email", "you@example.com"], check=True)
-        subprocess.run(["git", "config", "--global", "user.name", "Your Name"], check=True)
+        subprocess.run(["git", "config", "--global", "user.email", "tspeigner@pm.me"], check=True)
+        subprocess.run(["git", "config", "--global", "user.name", "Tommy S"], check=True)
         subprocess.run(["git", "add", DOCKERFILE], check=True)
         commit_msg = f"Update Restic version to {new_version}"
         subprocess.run(["git", "commit", "-m", commit_msg], check=True)
+        
+        # Update remote URL with GITHUB_TOKEN if available
+        token = os.environ.get("GITHUB_TOKEN")
+        repo = os.environ.get("GITHUB_REPOSITORY")
+        if token and repo:
+            subprocess.run(["git", "remote", "set-url", "origin", f"https://x-access-token:{token}@github.com/{repo}.git"], check=True)
+        
         subprocess.run(["git", "push", "origin", "main"], check=True)
     except subprocess.CalledProcessError as e:
         print("Git command failed:", e)
