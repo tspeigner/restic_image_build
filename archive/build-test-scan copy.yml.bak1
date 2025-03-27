@@ -1,0 +1,56 @@
+name: Weekly Restic Image Build & Test
+
+on:
+  schedule:
+    - cron: "0 0 * * 0"  # Every Sunday at midnight UTC
+  workflow_dispatch:   # Manual trigger
+
+jobs:
+  build-and-test:
+    name: Build, Test, and Scan Restic Image
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.x"
+
+    - name: Update Restic Version
+      run: |
+        chmod +x ./scripts/update_restic_version.py
+        ./scripts/update_restic_version.py
+
+    - name: Build Docker Image
+      run: |
+        docker build -t restic_image_build:${{ github.sha }} .
+
+    - name: Run Test Backup (Dry Run)
+      run: |
+        docker run --rm restic_image_build:${{ github.sha }} restic --help
+
+    - name: Scan Image with Grype and Fail on Critical Vulns
+      id: grype_scan
+      continue-on-error: true
+      run: |
+        docker pull anchore/grype:latest
+        # The flag --fail-on is used to exit with an error if vulnerabilities of a given severity are found.
+        docker run --rm anchore/grype:latest restic_image_build:${{ github.sha }} --fail-on critical
+
+    - name: Build Patched Docker Image on Vulnerability Failure
+      if: ${{ failure() }}
+      run: |
+        echo "Critical vulnerabilities were found. Building patched image with updated libraries..."
+        # Assumes you have a separate Dockerfile (e.g., Dockerfile.patched) that uses updated libraries.
+        docker build -t restic_image_build:patched -f Dockerfile.patched .
+        # Optionally run tests on the patched image:
+        docker run --rm restic_image_build:patched restic --help
+
+    - name: Notify on Failure
+      if: ${{ failure() }}
+      run: |
+        echo "One or more steps failed. Sending notification..."
+        # Add your notification command here (e.g., send an email, post to Slack, etc.)

@@ -25,32 +25,34 @@ jobs:
         ./scripts/update_restic_version.py
 
     - name: Build Docker Image
+      # Build the image and tag it with a unique tag (using the commit SHA in this example)
       run: |
-        docker build -t restic_image_build:${{ github.sha }} .
+        # Build the image and tag it using the commit SHA for traceability
+        IMAGE_TAG=restic_image_build:${GITHUB_SHA}
+        docker build -t $IMAGE_TAG .
 
     - name: Run Test Backup (Dry Run)
       run: |
-        docker run --rm restic_image_build:${{ github.sha }} restic --help
+        # Run a simple command (e.g., --help) to ensure the container works
+        docker run --rm $IMAGE_TAG restic --help
 
-    - name: Scan Image with Grype and Fail on Critical Vulns
-      id: grype_scan
-      continue-on-error: true
+    - name: Save Docker Image as Tar Archive
       run: |
-        docker pull anchore/grype:latest
-        # The flag --fail-on is used to exit with an error if vulnerabilities of a given severity are found.
-        docker run --rm anchore/grype:latest restic_image_build:${{ github.sha }} --fail-on critical
+        # Save the built image to a tar archive file named image.tar
+        IMAGE_TAG=restic_image_build:${GITHUB_SHA}
+        docker save $IMAGE_TAG -o image.tar
+      # Save the image file as an artifact if you wish to inspect it later
+      # (Optional step: use actions/upload-artifact@v3)
 
-    - name: Build Patched Docker Image on Vulnerability Failure
-      if: ${{ failure() }}
+    - name: Scan Image with Grype and Fail on Critical Vulnerabilities
       run: |
-        echo "Critical vulnerabilities were found. Building patched image with updated libraries..."
-        # Assumes you have a separate Dockerfile (e.g., Dockerfile.patched) that uses updated libraries.
-        docker build -t restic_image_build:patched -f Dockerfile.patched .
-        # Optionally run tests on the patched image:
-        docker run --rm restic_image_build:patched restic --help
+        # Run Grype in a container to scan the saved image tar file.
+        # Mount the tar file into the container.
+        docker run --rm -v "$(pwd)/image.tar:/image.tar" anchore/grype:latest /image.tar --fail-on critical
+      # The --fail-on critical flag makes the step fail if any critical vulnerabilities are detected.
 
     - name: Notify on Failure
-      if: ${{ failure() }}
+      if: failure()
       run: |
+        # Replace this with your preferred notification mechanism (e.g., Slack, email, GitHub issue)
         echo "One or more steps failed. Sending notification..."
-        # Add your notification command here (e.g., send an email, post to Slack, etc.)
