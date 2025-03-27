@@ -67,6 +67,13 @@ jobs:
         echo "Testing patched image..."
         docker run --rm restic_image_build:patched restic --help
 
+    - name: Scan Patched Image with Grype
+      if: steps.grype_scan.outcome == 'failure'
+      run: |
+        echo "Scanning patched image for vulnerabilities..."
+        docker save restic_image_build:patched -o patched_image.tar
+        docker run --rm -v "$(pwd)/patched_image.tar:/patched_image.tar" anchore/grype:latest /patched_image.tar --fail-on critical
+
     - name: Notify on Failure
       if: failure()
       run: |
