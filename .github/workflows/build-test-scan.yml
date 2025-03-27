@@ -30,22 +30,24 @@ jobs:
         username: ${{ vars.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+    - name: Verify Docker Login
+      run: docker info
+
     - name: Build Docker Image
       # Build the image and tag it with a unique tag (using the commit SHA in this example)
       run: |
         # Build the image and tag it using the commit SHA for traceability
-        IMAGE_TAG=restic_image_build:${GITHUB_SHA}
+        IMAGE_TAG="restic_image_build:${{ github.sha }}"
         docker build -t $IMAGE_TAG .
 
     - name: Run Test Backup (Dry Run)
       run: |
-        # Run a simple command (e.g., --help) to ensure the container works
+        IMAGE_TAG="restic_image_build:${{ github.sha }}"
         docker run --rm $IMAGE_TAG restic --help
 
     - name: Save Docker Image as Tar Archive
       run: |
-        # Save the built image to a tar archive file named image.tar
-        IMAGE_TAG=restic_image_build:${GITHUB_SHA}
+        IMAGE_TAG="restic_image_build:${{ github.sha }}"
         docker save $IMAGE_TAG -o image.tar
       # Save the image file as an artifact if you wish to inspect it later
       # (Optional step: use actions/upload-artifact@v3)
