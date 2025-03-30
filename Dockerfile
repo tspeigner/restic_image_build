@@ -5,7 +5,7 @@ FROM alpine:latest
 RUN apk add --no-cache ca-certificates tini wget bzip2
 
 # Set the Restic version (update as needed)
-ENV RESTIC_VERSION=0.17.3
+ENV RESTIC_VERSION=0.18.0
 
 # Download and install Restic
 RUN wget https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_amd64.bz2 && \
